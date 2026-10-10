@@ -1,17 +1,20 @@
-
 import hashlib
 import os
 from contextvars import ContextVar
 
 import uvicorn
 from mcp.server.fastmcp import FastMCP
+from mcp.server.transport_security import TransportSecuritySettings
 
 challenge_header = ContextVar("challenge_header", default=None)
 
 mcp = FastMCP(
     "Exam Challenge Server",
-    json_response=True,
     stateless_http=True,
+    transport_security=TransportSecuritySettings(
+        allowed_hosts=["mcp-server-wuo5.onrender.com"],
+        allowed_origins=["https://mcp-server-wuo5.onrender.com"],
+    ),
 )
 
 
@@ -25,6 +28,7 @@ def solve_challenge() -> str:
 
     email = "24f3005284@ds.study.iitm.ac.in"
     message = f"{challenge}:{email}"
+
     return hashlib.sha256(message.encode("utf-8")).hexdigest()[:16]
 
 
@@ -42,7 +46,10 @@ class HeaderMiddleware:
             for key, value in scope.get("headers", [])
         }
 
-        token = challenge_header.set(headers.get("x-exam-challenge"))
+        token = challenge_header.set(
+            headers.get("x-exam-challenge")
+        )
+
         try:
             await self.app(scope, receive, send)
         finally:
@@ -58,3 +65,4 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=int(os.environ.get("PORT", "10000")),
     )
+
