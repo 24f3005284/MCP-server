@@ -1,3 +1,4 @@
+
 import hashlib
 import os
 from contextvars import ContextVar
@@ -16,7 +17,7 @@ mcp = FastMCP(
 
 @mcp.tool()
 def solve_challenge() -> str:
-    """Solve the current exam challenge using the HTTP request header."""
+    """Return the hash for the challenge in the HTTP request header."""
     challenge = challenge_header.get()
 
     if not challenge:
@@ -37,9 +38,10 @@ class HeaderMiddleware:
             return
 
         headers = {
-            k.decode("latin-1").lower(): v.decode("latin-1")
-            for k, v in scope.get("headers", [])
+            key.decode("latin-1").lower(): value.decode("latin-1")
+            for key, value in scope.get("headers", [])
         }
+
         token = challenge_header.set(headers.get("x-exam-challenge"))
         try:
             await self.app(scope, receive, send)
@@ -56,5 +58,3 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=int(os.environ.get("PORT", "10000")),
     )
-
-
